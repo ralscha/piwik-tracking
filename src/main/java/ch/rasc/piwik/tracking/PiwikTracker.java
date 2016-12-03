@@ -70,7 +70,7 @@ public class PiwikTracker {
 	}
 
 	/**
-	 * Send asynchronious tracking request to Piwik
+	 * Sends an asynchronious tracking request to Piwik
 	 */
 	public void sendAsync(PiwikRequest trackingRequest, Callback callback) {
 		Request httpRequest = createHttpRequest(trackingRequest);
@@ -100,7 +100,7 @@ public class PiwikTracker {
 
 	/**
 	 * Sends a synchronious tracking request to Piwik. The method returns true when the
-	 * http get request was successful.
+	 * http get request is successful.
 	 */
 	public boolean send(PiwikRequest trackingRequest) {
 

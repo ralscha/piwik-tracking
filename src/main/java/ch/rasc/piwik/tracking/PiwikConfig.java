@@ -18,8 +18,10 @@ package ch.rasc.piwik.tracking;
 import java.util.List;
 
 import org.immutables.value.Value;
+import org.immutables.value.Value.Style.ImplementationVisibility;
 
 @Value.Immutable(copy = false)
+@Value.Style(depluralize = true, visibility = ImplementationVisibility.PACKAGE)
 public interface PiwikConfig {
 
 	default String scheme() {
