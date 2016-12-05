@@ -63,6 +63,9 @@ The library is hosted on the Central Maven Repository
 
 ## Changelog
 
+### 1.0.1 - December ??, 2016
+  * Remove unnecessary System.out.println call
+
 ### 1.0.0 - December 3, 2016
   * Initial release
 
