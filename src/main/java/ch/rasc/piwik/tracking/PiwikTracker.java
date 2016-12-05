@@ -87,7 +87,6 @@ public class PiwikTracker {
 
 				@Override
 				public void onResponse(Call call, Response response) throws IOException {
-					System.out.println(response.code());
 					if (!response.isSuccessful()) {
 						LoggerFactory.getLogger(getClass()).error(
 								"asnyc request was not successful. http response code: {}",
