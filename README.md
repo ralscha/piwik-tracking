@@ -57,13 +57,13 @@ The library is hosted on the Central Maven Repository
 	<dependency>
 		<groupId>ch.rasc</groupId>
 		<artifactId>piwik-tracking</artifactId>
-		<version>1.0.0</version>
+		<version>1.0.1</version>
 	</dependency>
 ```
 
 ## Changelog
 
-### 1.0.1 - December ??, 2016
+### 1.0.1 - December 6, 2016
   * Remove unnecessary System.out.println call
 
 ### 1.0.0 - December 3, 2016
