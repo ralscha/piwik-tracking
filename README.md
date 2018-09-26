@@ -57,11 +57,14 @@ The library is hosted on the Central Maven Repository
 	<dependency>
 		<groupId>ch.rasc</groupId>
 		<artifactId>piwik-tracking</artifactId>
-		<version>1.0.1</version>
+		<version>1.0.2</version>
 	</dependency>
 ```
 
 ## Changelog
+
+### 1.0.2 - September 26, 2018
+  * Replace `javax.xml.bind.DatatypeConverter` code. This package no longer exists in Java 11
 
 ### 1.0.1 - December 6, 2016
   * Remove unnecessary System.out.println call
