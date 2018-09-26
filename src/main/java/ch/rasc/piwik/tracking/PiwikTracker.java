@@ -19,8 +19,6 @@ import java.io.IOException;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.slf4j.LoggerFactory;
 
 import okhttp3.Call;
@@ -124,7 +122,7 @@ public class PiwikTracker {
 				.addQueryParameter("rec", "1")
 				.addQueryParameter("token_auth", this.config.authToken())
 				.addQueryParameter("url", trackingRequest.url())
-				.addQueryParameter("rand", DatatypeConverter.printHexBinary(bytes))
+				.addQueryParameter("rand", printHexBinary(bytes))
 				.addQueryParameter("apiv", "1").addQueryParameter("send_image", "0");
 
 		if (trackingRequest.idSite().isEmpty()) {
@@ -147,6 +145,17 @@ public class PiwikTracker {
 
 		Request httpRequest = new Request.Builder().url(urlBuilder.build()).build();
 		return httpRequest;
+	}
+
+	private static final char[] hexCode = "0123456789ABCDEF".toCharArray();
+
+	private static String printHexBinary(byte[] data) {
+		StringBuilder r = new StringBuilder(data.length * 2);
+		for (byte b : data) {
+			r.append(hexCode[(b >> 4) & 0xF]);
+			r.append(hexCode[(b & 0xF)]);
+		}
+		return r.toString();
 	}
 
 }
