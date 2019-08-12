@@ -6,12 +6,13 @@ from a Java application.
 
 ## Usage
 
-First create an instance of PiwikConfig to configure the tracker. Mandatory inputs 
-are the name of the server that hosts Piwik and the authentication token. 
+First create an instance of PiwikConfig to configure the tracker. Mandatory input
+is the name of the server that hosts Piwik. 
 
 ```
   PiwikConfig config = PiwikConfig.builder().addIdSite("1")
-	    			.host("mypiwik.host.com").authToken("ffffffffffffffffffffffffffffffff")
+	    			.host("mypiwik.host.com")
+	    			.authToken("ffffffffffffffffffffff")
 		     		.build();
 ```
 
