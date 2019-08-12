@@ -10,7 +10,7 @@
 
 	<groupId>ch.rasc</groupId>
 	<artifactId>piwik-tracking</artifactId>
-	<version>1.0.3</version>
+	<version>1.0.4-SNAPSHOT</version>
 
 	<inceptionYear>2016</inceptionYear>
 
