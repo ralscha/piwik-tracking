@@ -120,10 +120,13 @@ public class PiwikTracker {
 		HttpUrl.Builder urlBuilder = new HttpUrl.Builder().scheme(this.config.scheme())
 				.host(this.config.host()).addPathSegment(this.config.path())
 				.addQueryParameter("rec", "1")
-				.addQueryParameter("token_auth", this.config.authToken())
 				.addQueryParameter("url", trackingRequest.url())
 				.addQueryParameter("rand", printHexBinary(bytes))
 				.addQueryParameter("apiv", "1").addQueryParameter("send_image", "0");
+
+		if (this.config.authToken().isPresent()) {
+			urlBuilder.addQueryParameter("token_auth", this.config.authToken().get());
+		}
 
 		if (trackingRequest.idSite().isEmpty()) {
 			if (this.idSite != null) {

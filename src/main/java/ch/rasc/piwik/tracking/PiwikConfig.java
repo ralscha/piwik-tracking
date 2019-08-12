@@ -16,6 +16,7 @@
 package ch.rasc.piwik.tracking;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style.ImplementationVisibility;
@@ -34,7 +35,7 @@ public interface PiwikConfig {
 		return "piwik.php";
 	}
 
-	String authToken();
+	Optional<String> authToken();
 
 	List<String> idSite();
 
