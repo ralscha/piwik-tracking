@@ -118,7 +118,7 @@ public class PiwikTracker {
 		this.random.nextBytes(bytes);
 
 		HttpUrl.Builder urlBuilder = new HttpUrl.Builder().scheme(this.config.scheme())
-				.host(this.config.host()).addPathSegment(this.config.path())
+				.host(this.config.host()).addPathSegments(this.config.path())
 				.addQueryParameter("rec", "1")
 				.addQueryParameter("url", trackingRequest.url())
 				.addQueryParameter("rand", printHexBinary(bytes))
