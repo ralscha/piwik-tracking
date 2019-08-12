@@ -25,12 +25,14 @@ import org.immutables.value.Value.Style.ImplementationVisibility;
 @Value.Style(depluralize = true, visibility = ImplementationVisibility.PACKAGE)
 public interface PiwikConfig {
 
+	@Value.Default
 	default String scheme() {
 		return "https";
 	}
 
 	String host();
 
+	@Value.Default
 	default String path() {
 		return "piwik.php";
 	}
