@@ -57,11 +57,16 @@ The library is hosted on the Central Maven Repository
 	<dependency>
 		<groupId>ch.rasc</groupId>
 		<artifactId>piwik-tracking</artifactId>
-		<version>1.0.2</version>
+		<version>1.0.3</version>
 	</dependency>
 ```
 
 ## Changelog
+
+### 1.0.3 - August 12, 2019
+  * [Issue 1](https://github.com/ralscha/piwik-tracking/issues/1): token_auth shouldn't be mandatory
+  * [Issue 2](https://github.com/ralscha/piwik-tracking/issues/2): path and scheme cannot be changed
+  * [Issue 3](https://github.com/ralscha/piwik-tracking/issues/3): Cannot add path wish slashes
 
 ### 1.0.2 - September 26, 2018
   * Replace `javax.xml.bind.DatatypeConverter` code. This package no longer exists in Java 11
