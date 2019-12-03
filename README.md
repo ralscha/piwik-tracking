@@ -1,4 +1,5 @@
-[![Build Status](https://api.travis-ci.org/ralscha/piwik-tracking.png)](https://travis-ci.org/ralscha/piwik-tracking)
+![Test Status](https://github.com/ralscha/piwik-tracking/workflows/test/badge.svg)
+
 
 piwik-tracking is a library that helps sending tracking requests to a [Piwik](https://piwik.org/) server 
 from a Java application.   
