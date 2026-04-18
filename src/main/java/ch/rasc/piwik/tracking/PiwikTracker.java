@@ -16,83 +16,96 @@
 package ch.rasc.piwik.tracking;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.Random;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 public class PiwikTracker {
 
+	private static final Logger logger = LoggerFactory.getLogger(PiwikTracker.class);
+
 	private final PiwikConfig config;
 
-	private final OkHttpClient httpClient;
+	private final HttpClient httpClient;
+
+	private final ExecutorService executorService;
 
 	private final Random random;
 
-	private final String idSite;
-
 	public PiwikTracker(final PiwikConfig config) {
-		this(config, new OkHttpClient());
+		this(config, Executors.newCachedThreadPool());
 	}
 
-	public PiwikTracker(final PiwikConfig config, final OkHttpClient httpClient) {
+	private PiwikTracker(final PiwikConfig config,
+			final ExecutorService executorService) {
+		this(config, HttpClient.newBuilder().executor(executorService).build(),
+				executorService);
+	}
+
+	public PiwikTracker(final PiwikConfig config, final HttpClient httpClient) {
+		this(config, httpClient, null);
+	}
+
+	private PiwikTracker(final PiwikConfig config, final HttpClient httpClient,
+			final ExecutorService executorService) {
 		this.config = config;
 		this.httpClient = httpClient;
+		this.executorService = executorService;
 		this.random = new Random();
-
-		if (!config.idSite().isEmpty()) {
-			this.idSite = config.idSite().stream().collect(Collectors.joining(","));
-		}
-		else {
-			this.idSite = null;
-		}
 	}
 
 	public void shutdown() {
-		this.httpClient.dispatcher().executorService().shutdown();
+		if (this.executorService != null) {
+			this.executorService.shutdown();
+		}
 	}
 
 	public void shutdownNow() {
-		this.httpClient.dispatcher().executorService().shutdownNow();
-	}
-
-	public void sendAsync(PiwikRequest trackingRequest) {
-		sendAsync(trackingRequest, null);
+		if (this.executorService != null) {
+			this.executorService.shutdownNow();
+		}
 	}
 
 	/**
 	 * Sends an asynchronious tracking request to Piwik
 	 */
-	public void sendAsync(PiwikRequest trackingRequest, Callback callback) {
-		Request httpRequest = createHttpRequest(trackingRequest);
+	public CompletableFuture<Boolean> sendAsync(PiwikRequest trackingRequest) {
+		List<String> siteIds = getSiteIds(trackingRequest);
+		List<CompletableFuture<Boolean>> futures = new ArrayList<>(siteIds.size());
 
-		if (callback != null) {
-			this.httpClient.newCall(httpRequest).enqueue(callback);
+		for (String siteId : siteIds) {
+			HttpRequest httpRequest = createHttpRequest(trackingRequest, siteId);
+			CompletableFuture<Boolean> future = this.httpClient
+					.sendAsync(httpRequest, HttpResponse.BodyHandlers.discarding())
+					.thenApply(PiwikTracker::isSuccessful)
+					.whenComplete((successful, throwable) -> {
+						if (throwable != null) {
+							logger.error("sendAsync for site {}", siteId, throwable);
+						}
+						else if (!successful) {
+							logger.error("async request for site {} was not successful",
+									siteId);
+						}
+					});
+			futures.add(future);
 		}
-		else {
-			this.httpClient.newCall(httpRequest).enqueue(new Callback() {
-				@Override
-				public void onFailure(Call call, IOException e) {
-					LoggerFactory.getLogger(getClass()).error("sendAsync", e);
-				}
 
-				@Override
-				public void onResponse(Call call, Response response) throws IOException {
-					if (!response.isSuccessful()) {
-						LoggerFactory.getLogger(getClass()).error(
-								"asnyc request was not successful. http response code: {}",
-								response.code());
-					}
-				}
-			});
-		}
+		return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+				.thenApply(ignored -> futures.stream().allMatch(CompletableFuture::join));
 	}
 
 	/**
@@ -101,53 +114,118 @@ public class PiwikTracker {
 	 */
 	public boolean send(PiwikRequest trackingRequest) {
 
-		Request httpRequest = createHttpRequest(trackingRequest);
+		for (String siteId : getSiteIds(trackingRequest)) {
+			HttpRequest httpRequest = createHttpRequest(trackingRequest, siteId);
 
-		try (Response response = this.httpClient.newCall(httpRequest).execute()) {
-			return response.isSuccessful();
-		}
-		catch (IOException e) {
-			LoggerFactory.getLogger(getClass()).error("send", e);
-			return false;
+			try {
+				HttpResponse<Void> response = this.httpClient.send(httpRequest,
+						HttpResponse.BodyHandlers.discarding());
+				if (!isSuccessful(response)) {
+					logger.error("request for site {} was not successful", siteId);
+					return false;
+				}
+			}
+			catch (IOException e) {
+				logger.error("send for site {}", siteId, e);
+				return false;
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				logger.error("send for site {}", siteId, e);
+				return false;
+			}
 		}
 
+		return true;
 	}
 
-	private Request createHttpRequest(PiwikRequest trackingRequest) {
+	private HttpRequest createHttpRequest(PiwikRequest trackingRequest,
+			String siteId) {
+		HttpRequest.Builder builder = HttpRequest.newBuilder(
+				createUri(trackingRequest, siteId));
+
+		if (this.config.httpMethod() == TrackingHttpMethod.POST) {
+			return builder.POST(HttpRequest.BodyPublishers.noBody()).build();
+		}
+
+		return builder.GET().build();
+	}
+
+	private URI createUri(PiwikRequest trackingRequest, String siteId) {
 		byte[] bytes = new byte[10];
 		this.random.nextBytes(bytes);
 
-		HttpUrl.Builder urlBuilder = new HttpUrl.Builder().scheme(this.config.scheme())
-				.host(this.config.host()).addPathSegments(this.config.path())
-				.addQueryParameter("rec", "1")
-				.addQueryParameter("url", trackingRequest.url())
-				.addQueryParameter("rand", printHexBinary(bytes))
-				.addQueryParameter("apiv", "1").addQueryParameter("send_image", "0");
+		List<String> queryParameters = new ArrayList<>();
+		addQueryParameter(queryParameters, "rec", "1");
+		addQueryParameter(queryParameters, "url", trackingRequest.url());
+		addQueryParameter(queryParameters, "rand", printHexBinary(bytes));
+		addQueryParameter(queryParameters, "apiv", "1");
+		addQueryParameter(queryParameters, "send_image", "0");
 
 		if (this.config.authToken().isPresent()) {
-			urlBuilder.addQueryParameter("token_auth", this.config.authToken().get());
+			addQueryParameter(queryParameters, "token_auth",
+					this.config.authToken().get());
 		}
 
-		if (trackingRequest.idSite().isEmpty()) {
-			if (this.idSite != null) {
-				urlBuilder.addQueryParameter("idsite", this.idSite);
-			}
-			else {
-				throw new IllegalArgumentException("idSite is a required parameter");
-			}
-		}
-		else {
-			urlBuilder.addQueryParameter("idsite",
-					trackingRequest.idSite().stream().collect(Collectors.joining(",")));
-		}
+		addQueryParameter(queryParameters, "idsite", siteId);
 
 		if (!trackingRequest.parameters().isEmpty()) {
-			trackingRequest.parameters().forEach((k, v) -> urlBuilder
-					.addQueryParameter(k.getValue(), String.valueOf(v)));
+			trackingRequest.parameters().forEach((k, v) -> addQueryParameter(
+					queryParameters, k.getValue(), String.valueOf(v)));
 		}
 
-		Request httpRequest = new Request.Builder().url(urlBuilder.build()).build();
-		return httpRequest;
+		StringBuilder uriBuilder = new StringBuilder();
+		uriBuilder.append(this.config.scheme()).append("://")
+				.append(this.config.host());
+
+		String normalizedPath = normalizePath(this.config.path());
+		if (!normalizedPath.isEmpty()) {
+			uriBuilder.append('/').append(normalizedPath);
+		}
+
+		uriBuilder.append('?').append(String.join("&", queryParameters));
+		return URI.create(uriBuilder.toString());
+	}
+
+	private List<String> getSiteIds(PiwikRequest trackingRequest) {
+		List<String> siteIds = trackingRequest.idSite().isEmpty() ? this.config.idSite()
+				: trackingRequest.idSite();
+
+		if (siteIds.isEmpty()) {
+			throw new IllegalArgumentException("At least one idSite is required");
+		}
+
+		for (String siteId : siteIds) {
+			if (siteId == null || siteId.trim().isEmpty()) {
+				throw new IllegalArgumentException("idSite must not be blank");
+			}
+		}
+
+		return Collections.unmodifiableList(new ArrayList<>(siteIds));
+	}
+
+	private static boolean isSuccessful(HttpResponse<?> response) {
+		int statusCode = response.statusCode();
+		return statusCode >= 200 && statusCode < 300;
+	}
+
+	private static void addQueryParameter(List<String> queryParameters,
+			String name, String value) {
+		queryParameters.add(encode(Objects.requireNonNull(name, "name")) + "="
+				+ encode(Objects.requireNonNull(value, "value")));
+	}
+
+	private static String normalizePath(String path) {
+		String normalizedPath = path;
+		while (normalizedPath.startsWith("/")) {
+			normalizedPath = normalizedPath.substring(1);
+		}
+		return normalizedPath;
+	}
+
+	private static String encode(String value) {
+		return URLEncoder.encode(value, StandardCharsets.UTF_8)
+				.replace("+", "%20");
 	}
 
 	private static final char[] hexCode = "0123456789ABCDEF".toCharArray();

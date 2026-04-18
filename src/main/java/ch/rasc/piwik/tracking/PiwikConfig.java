@@ -25,6 +25,8 @@ import org.immutables.value.Value.Style.ImplementationVisibility;
 @Value.Style(depluralize = true, visibility = ImplementationVisibility.PACKAGE)
 public interface PiwikConfig {
 
+	TrackingBackend backend();
+
 	@Value.Default
 	default String scheme() {
 		return "https";
@@ -34,7 +36,12 @@ public interface PiwikConfig {
 
 	@Value.Default
 	default String path() {
-		return "piwik.php";
+		return backend().defaultPath();
+	}
+
+	@Value.Default
+	default TrackingHttpMethod httpMethod() {
+		return backend().defaultHttpMethod();
 	}
 
 	Optional<String> authToken();
