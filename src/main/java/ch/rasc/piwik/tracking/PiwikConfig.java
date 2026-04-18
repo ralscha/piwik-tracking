@@ -53,6 +53,9 @@ public interface PiwikConfig {
 	}
 
 	public static final class Builder extends ImmutablePiwikConfig.Builder {
+
 		// nothing here
+
 	}
+
 }

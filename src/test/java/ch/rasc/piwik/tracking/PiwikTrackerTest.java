@@ -51,13 +51,17 @@ class PiwikTrackerTest {
 	@Test
 	void shouldSendGetRequestForMatomoBackend() {
 		RecordingHttpClient httpClient = new RecordingHttpClient(204);
-		PiwikConfig config = PiwikConfig.builder().backend(TrackingBackend.MATOMO)
-				.host("example.matomo.test").path("collect")
-				.addIdSite("matomo-site")
-				.build();
+		PiwikConfig config = PiwikConfig.builder()
+			.backend(TrackingBackend.MATOMO)
+			.host("example.matomo.test")
+			.path("collect")
+			.addIdSite("matomo-site")
+			.build();
 
-		PiwikRequest request = PiwikRequest.builder().url("https://example.com/page")
-				.putParameter(QueryParameter.ACTION_NAME, "page view").build();
+		PiwikRequest request = PiwikRequest.builder()
+			.url("https://example.com/page")
+			.putParameter(QueryParameter.ACTION_NAME, "page view")
+			.build();
 
 		boolean successful = new PiwikTracker(config, httpClient).send(request);
 
@@ -71,20 +75,20 @@ class PiwikTrackerTest {
 		assertEquals("1", capturedRequest.queryParameters().get("rec"));
 		assertEquals("1", capturedRequest.queryParameters().get("apiv"));
 		assertEquals("0", capturedRequest.queryParameters().get("send_image"));
-		assertEquals("https://example.com/page",
-				capturedRequest.queryParameters().get("url"));
-		assertEquals("page view",
-				capturedRequest.queryParameters().get("action_name"));
+		assertEquals("https://example.com/page", capturedRequest.queryParameters().get("url"));
+		assertEquals("page view", capturedRequest.queryParameters().get("action_name"));
 	}
 
 	@Test
 	void shouldSendPostRequestForPiwikProBackend() {
 		RecordingHttpClient httpClient = new RecordingHttpClient(202);
-		PiwikConfig config = PiwikConfig.builder().backend(TrackingBackend.PIWIK_PRO)
-				.host("example.piwik.pro").addIdSite("piwik-pro-site").build();
+		PiwikConfig config = PiwikConfig.builder()
+			.backend(TrackingBackend.PIWIK_PRO)
+			.host("example.piwik.pro")
+			.addIdSite("piwik-pro-site")
+			.build();
 
-		PiwikRequest request = PiwikRequest.builder().url("https://example.com/post")
-				.build();
+		PiwikRequest request = PiwikRequest.builder().url("https://example.com/post").build();
 
 		boolean successful = new PiwikTracker(config, httpClient).send(request);
 
@@ -94,22 +98,21 @@ class PiwikTrackerTest {
 		CapturedRequest capturedRequest = httpClient.requests().get(0);
 		assertEquals("POST", capturedRequest.method());
 		assertEquals("/ppms.php", capturedRequest.path());
-		assertEquals("piwik-pro-site",
-				capturedRequest.queryParameters().get("idsite"));
-		assertEquals("https://example.com/post",
-				capturedRequest.queryParameters().get("url"));
+		assertEquals("piwik-pro-site", capturedRequest.queryParameters().get("idsite"));
+		assertEquals("https://example.com/post", capturedRequest.queryParameters().get("url"));
 	}
 
 	@Test
 	void shouldSendOneRequestPerSite() {
 		RecordingHttpClient httpClient = new RecordingHttpClient(204);
-		PiwikConfig config = PiwikConfig.builder().backend(TrackingBackend.MATOMO)
-				.host("example.matomo.test").path("fanout")
-				.addAllIdSite(Arrays.asList("site-1", "site-2", "site-3"))
-				.build();
+		PiwikConfig config = PiwikConfig.builder()
+			.backend(TrackingBackend.MATOMO)
+			.host("example.matomo.test")
+			.path("fanout")
+			.addAllIdSite(Arrays.asList("site-1", "site-2", "site-3"))
+			.build();
 
-		PiwikRequest request = PiwikRequest.builder().url("https://example.com/fanout")
-				.build();
+		PiwikRequest request = PiwikRequest.builder().url("https://example.com/fanout").build();
 
 		boolean successful = new PiwikTracker(config, httpClient).send(request);
 
@@ -206,8 +209,7 @@ class PiwikTrackerTest {
 		}
 
 		@Override
-		public <T> HttpResponse<T> send(HttpRequest request,
-				HttpResponse.BodyHandler<T> responseBodyHandler)
+		public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler)
 				throws IOException, InterruptedException {
 			this.requests.add(CapturedRequest.from(request));
 			return new StubHttpResponse<>(request, this.statusCode, null);
@@ -217,8 +219,7 @@ class PiwikTrackerTest {
 		public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request,
 				HttpResponse.BodyHandler<T> responseBodyHandler) {
 			this.requests.add(CapturedRequest.from(request));
-			return CompletableFuture.completedFuture(
-					new StubHttpResponse<>(request, this.statusCode, null));
+			return CompletableFuture.completedFuture(new StubHttpResponse<>(request, this.statusCode, null));
 		}
 
 		@Override
@@ -291,8 +292,7 @@ class PiwikTrackerTest {
 
 	}
 
-	private record CapturedRequest(String method, String path,
-			Map<String, String> queryParameters) {
+	private record CapturedRequest(String method, String path, Map<String, String> queryParameters) {
 
 		private static CapturedRequest from(HttpRequest request) {
 			return new CapturedRequest(request.method(), request.uri().getPath(),

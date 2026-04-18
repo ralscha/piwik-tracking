@@ -36,6 +36,9 @@ public interface PiwikRequest {
 	}
 
 	public static final class Builder extends ImmutablePiwikRequest.Builder {
+
 		// nothing here
+
 	}
+
 }
