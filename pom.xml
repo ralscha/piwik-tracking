@@ -47,7 +47,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>17</maven.compiler.release>
-    <immutables.version>2.12.1</immutables.version>
+    <immutables.version>2.12.3</immutables.version>
   </properties>
 
   <dependencies>
